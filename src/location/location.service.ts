@@ -14,6 +14,10 @@ export class LocationService {
       },
       include: {
         products: {
+          // Скрытые товары (isActive: false) не попадают в публичный каталог
+          where: {
+            product: { isActive: true }
+          },
           include: {
             product: {
               select: productReturnObject
@@ -29,6 +33,9 @@ export class LocationService {
       where: { id: id },
       include: {
         products: {
+          where: {
+            product: { isActive: true }
+          },
           include: {
             product: {
                 select: productReturnObject

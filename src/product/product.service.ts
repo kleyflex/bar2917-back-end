@@ -117,7 +117,8 @@ export class ProductService {
       where: {
         category: {
           slug: categorySlug
-        }
+        },
+        isActive: true
       },
       select: productReturnObject
     })
@@ -141,6 +142,7 @@ export class ProductService {
         category: {
           name: currentProduct.category.name
         },
+        isActive: true,
         NOT: {
           id: currentProduct.id
         }

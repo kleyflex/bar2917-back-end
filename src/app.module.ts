@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { envValidationSchema } from './config/env.validation';
 import { FeedbackModule } from './feedback/feedback.module';
+import { FileModule } from './file/file.module';
 import { LocationModule } from './location/location.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma.module';
@@ -30,6 +31,7 @@ import { UserModule } from './user/user.module';
     }),
     PrismaModule,
     AuthModule,
+    FileModule,
     UserModule,
     ProductModule,
     FeedbackModule,
