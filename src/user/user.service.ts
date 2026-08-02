@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { hash } from 'argon2';
 import { PrismaService } from 'src/prisma.service';
 import { returnUserObject } from './return-user.object';
+import { UserDto } from './user.dto';
 
 @Injectable()
 export class UserService {
@@ -26,7 +27,7 @@ export class UserService {
     return user
   }
 
-  async updateProfile(id: number, dto: any) {
+  async updateProfile(id: number, dto: UserDto) {
     const isSameUser = await this.prisma.user.findUnique({
       where: { email: dto.email }
     });

@@ -9,8 +9,6 @@ import { AuthDto } from './dto/auth.dto';
 
 @Injectable()
 export class AuthService {
-  [x: string]: any;
-
   constructor(private prisma: PrismaService, private jwt: JwtService, private userService: UserService) {}
 
   async login(dto: AuthDto){

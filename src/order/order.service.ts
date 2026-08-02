@@ -91,7 +91,7 @@ export class OrderService {
       }))
     );
 
-    const deliveryPrice = this.configService.get<number>('DELIVERY_PRICE');
+    const deliveryPrice = this.configService.get<number>('DELIVERY_PRICE') ?? 100;
 
     const total = items.reduce((acc, item) => {
       return acc + item.price * item.quantity;
@@ -142,7 +142,7 @@ export class OrderService {
 }
 
   // Endpoint закрыт OrdersEnabledGuard, пока доставка выключена.
-  // TODO перед включением доставки: не доверять телу webhook'а —
+  // TODO перед включением доставки:
   // 1) запросить платёж обратно у YooKassa по dto.object.id и сверить статус/сумму/metadata.orderId;
   // 2) отфильтровать запросы по официальным IP-диапазонам YooKassa;
   // 3) переводить заказ в PAYED только по данным, полученным от YooKassa, а не из тела запроса.

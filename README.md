@@ -1,73 +1,58 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# bar2917-back-end
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API суши-бара Bar2917. Отдаёт каталог товаров с ценами по точкам, управление пользователями и заказами, guard'ы для админки.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Стек
 
-## Description
+- NestJS 10 + TypeScript
+- PostgreSQL + Prisma 5
+- JWT-авторизация (passport-jwt)
+- Оплата — YooKassa (сейчас выключена, см. `ORDERS_ENABLED`)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Installation
+## Запуск
 
 ```bash
-$ yarn install
+npm install
+cp env.example .env        # заполнить значения
+npx prisma generate
+npx prisma migrate deploy  # на пустой базе применит схему
+npm run start:dev          # дев-режим, http://localhost:4200/api
+npm run build && npm run start:prod   # прод
 ```
 
-## Running the app
+На существующей базе, созданной раньше через `db push`, миграции нужно один раз пометить применёнными (таблицы уже есть):
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+npx prisma migrate resolve --applied 0_init
 ```
 
-## Test
+## Переменные окружения
 
-```bash
-# unit tests
-$ yarn run test
+Полный список в `env.example`. Обязательные: `DATABASE_URL`, `JWT_SECRET`
 
-# e2e tests
-$ yarn run test:e2e
+`ORDERS_ENABLED` - флаг доставки. Пока `false`, эндпоинты `POST /orders` и webhook `POST /orders/status` отвечают 503. Перед включением прочитать TODO в `src/order/order.service.ts` (верификация платежа).
 
-# test coverage
-$ yarn run test:cov
+## Структура
+
+```
+src/
+  auth/        логин, регистрация, JWT (access 1ч / refresh 30д), guard'ы
+  user/        профиль
+  product/     каталог, CRUD товаров (только админ)
+  category/    категории
+  location/    точки (рестораны), цены товаров задаются per-локация
+  order/       заказы и YooKassa — за флагом ORDERS_ENABLED
+  feedback/    обратная связь
+  statistics/  сводка для админки
+  common/      глобальный фильтр Prisma-ошибок
+  config/      Joi-валидация env, конфиг JWT
+prisma/        схема и миграции
+assets/        картинки товаров, раздаются по /assets
 ```
 
-## Support
+## Полезное инфо
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+- Цена заказа считается на сервере по ценам из БД, клиентские цены игнорируются.
+- Роут `GET /api/products` требует `locationId`; пагинация опциональна (`page`, `perPage`).
+- Ошибки Prisma переводятся в HTTP глобальным фильтром: дубль уникального поля — 409, «не найдено» — 404.
+- Rate-limit на `/auth/login` и `/auth/register` — 5 запросов в минуту.

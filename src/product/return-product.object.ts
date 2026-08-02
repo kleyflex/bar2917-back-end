@@ -26,7 +26,3 @@ export const productReturnObject: Prisma.ProductSelect = {
         }
     }
 }
-
-export const productReturnObjectFullest: Prisma.ProductSelect = {
-    ...productReturnObject,
-}

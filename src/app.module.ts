@@ -3,8 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { path } from 'app-root-path';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { envValidationSchema } from './config/env.validation';
@@ -13,7 +11,7 @@ import { LocationModule } from './location/location.module';
 import { OrderModule } from './order/order.module';
 import { PrismaModule } from './prisma.module';
 import { ProductModule } from './product/product.module';
-import { StatiscticsModule } from './statisctics/statisctics.module';
+import { StatisticsModule } from './statistics/statistics.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -37,11 +35,9 @@ import { UserModule } from './user/user.module';
     FeedbackModule,
     CategoryModule,
     OrderModule,
-    StatiscticsModule,
+    StatisticsModule,
     LocationModule
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
 

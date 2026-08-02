@@ -13,8 +13,8 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  const allowedOrigins = configService
-    .get<string>('APP_URL')
+  // Дефолты гарантированы Joi-схемой; фолбэки — для строгой типизации
+  const allowedOrigins = (configService.get<string>('APP_URL') ?? 'http://localhost:3000')
     .split(',')
     .map(origin => origin.trim());
 
@@ -25,6 +25,6 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true
   })
-  await app.listen(configService.get<number>('PORT'));
+  await app.listen(configService.get<number>('PORT') ?? 4200);
 }
 bootstrap();

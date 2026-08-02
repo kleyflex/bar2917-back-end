@@ -5,7 +5,7 @@ import { PrismaService } from 'src/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { EnumProductSort, GetAllProductDto } from './dto/get-all.product.dto';
 import { ProductDto } from './dto/product.dto';
-import { productReturnObject, productReturnObjectFullest } from './return-product.object';
+import { productReturnObject } from './return-product.object';
 
 @Injectable()
 export class ProductService {
@@ -87,7 +87,7 @@ export class ProductService {
       where: {
         id
       },
-      select: productReturnObjectFullest
+      select: productReturnObject
     })
 
     if(!product){
@@ -102,7 +102,7 @@ export class ProductService {
       where: {
         slug
       },
-      select: productReturnObjectFullest
+      select: productReturnObject
     })
 
     if(!product){
@@ -119,7 +119,7 @@ export class ProductService {
           slug: categorySlug
         }
       },
-      select: productReturnObjectFullest
+      select: productReturnObject
     })
 
     if(!products){
@@ -131,6 +131,10 @@ export class ProductService {
 
   async getSimilar(id: number) {
     const currentProduct = await this.byId(id)
+
+    if (!currentProduct.category) {
+      throw new NotFoundException('У товара не указана категория');
+    }
 
     const products = await this.prisma.product.findMany({
       where: {
