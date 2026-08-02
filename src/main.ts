@@ -8,9 +8,15 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
+  const allowedOrigins = (process.env.APP_URL ?? 'http://localhost:3000')
+    .split(',')
+    .map(origin => origin.trim());
 
   app.setGlobalPrefix('api')
-  app.enableCors()
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true
+  })
   await app.listen(4200);
 }
 bootstrap();

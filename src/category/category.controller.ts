@@ -18,7 +18,6 @@ export class CategoryController {
   }
 
   @Get(':id')
-  @Auth()
   async getById(@Param('id') id: string) {
     return this.categoryService.byId(+id);
   }

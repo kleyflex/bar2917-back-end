@@ -30,10 +30,21 @@ export class UserService {
     const isSameUser = await this.prisma.user.findUnique({
       where: { email: dto.email }
     });
-  
+
     if (isSameUser && id !== isSameUser.id)
       throw new BadRequestException('Email already in use');
-  
+
+    if (dto.phone) {
+      const samePhone = await this.prisma.user.findFirst({
+        where: {
+          phone: dto.phone,
+          NOT: { id }
+        }
+      });
+
+      if (samePhone) throw new BadRequestException('Этот телефон уже используется');
+    }
+
     const user = await this.byId(id);
   
     return this.prisma.user.update({
@@ -47,18 +58,4 @@ export class UserService {
     });
   }
 
-  async getAllPhones() {
-    const users = await this.prisma.user.findMany({
-      select: {
-        id: true,
-        phone: true
-      }
-    });
-  
-    return users.map(user => ({
-      id: user.id,
-      phone: user.phone
-    }));
-  }
-  
 }

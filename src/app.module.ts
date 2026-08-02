@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { path } from 'app-root-path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,6 +18,10 @@ import { UserModule } from './user/user.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      ttl: 60_000,
+      limit: 10
+    }]),
     ServeStaticModule.forRoot({
       rootPath: `${path}/assets`, 
       serveRoot: '/assets', // Укажите URL-префикс для доступа к статическим файлам

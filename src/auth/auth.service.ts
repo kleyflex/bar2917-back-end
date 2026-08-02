@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { hash, verify } from 'argon2';
 import { PrismaService } from 'src/prisma.service';
 import { UserService } from 'src/user/user.service';
+import { JwtPayload } from './auth.interface';
 import { AuthDto } from './dto/auth.dto';
 
 @Injectable()
@@ -24,9 +25,17 @@ export class AuthService {
   }
 
   async getNewTokens(refreshToken: string) {
-    const result = await this.jwt.verifyAsync(refreshToken);
-    if (!result) throw new UnauthorizedException('Invalid refresh token');
-  
+    let result: JwtPayload;
+
+    try {
+      result = await this.jwt.verifyAsync<JwtPayload>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Недействительный refresh-токен');
+    }
+
+    // Access-токен нельзя использовать для обновления пары токенов
+    if (result.type !== 'refresh') throw new UnauthorizedException('Недействительный refresh-токен');
+
     const user = await this.userService.byId(result.id, {
       isAdmin: true
     })
@@ -66,14 +75,12 @@ export class AuthService {
   }
 
   private async issueTokens(userId: number) {
-    const data = {id: userId}
-
-    const accessToken = this.jwt.sign(data,{
-      expiresIn: '7h',
+    const accessToken = this.jwt.sign({ id: userId, type: 'access' }, {
+      expiresIn: '1h',
     });
 
-    const refreshToken = this.jwt.sign(data,{
-      expiresIn: '5d',
+    const refreshToken = this.jwt.sign({ id: userId, type: 'refresh' }, {
+      expiresIn: '30d',
     });
 
     return {accessToken, refreshToken}
@@ -94,11 +101,12 @@ export class AuthService {
       }
     })
 
-    if (!user) throw new NotFoundException('Пользователь не найден')
+    // Единый ответ для несуществующего email и неверного пароля — защита от перебора пользователей
+    if (!user) throw new UnauthorizedException('Неверный email или пароль')
 
     const isValid = await verify(user.password, dto.password)
 
-    if(!isValid) throw new UnauthorizedException('Неверный пароль')
+    if(!isValid) throw new UnauthorizedException('Неверный email или пароль')
 
     return user
   }

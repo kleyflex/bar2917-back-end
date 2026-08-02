@@ -18,15 +18,8 @@ export class UserController {
   @HttpCode(200)
   @Auth()
   @Put('profile')
-  async getNewTokens(@CurrentUser('id') id: number, @Body() dto: UserDto) {
+  async updateProfile(@CurrentUser('id') id: number, @Body() dto: UserDto) {
     return this.userService.updateProfile(id, dto);
-  }
-
-  @HttpCode(200)
-  @Auth()
-  @Get('phones')
-  async getAllPhones() {
-    return this.userService.getAllPhones();
   }
 
 }

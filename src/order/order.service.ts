@@ -116,21 +116,31 @@ export class OrderService {
         type:'redirect',
         return_url: 'http://31.128.41.46:3000/thanks'
       },
-      description: `Заказ #${order.id}`
+      description: `Заказ #${order.id}`,
+      metadata: {
+        orderId: String(order.id)
+      }
     })
-    
+
     return payment
 }
 
+  // Endpoint закрыт OrdersEnabledGuard, пока доставка выключена.
+  // TODO перед включением доставки: не доверять телу webhook'а —
+  // 1) запросить платёж обратно у YooKassa по dto.object.id и сверить статус/сумму/metadata.orderId;
+  // 2) отфильтровать запросы по официальным IP-диапазонам YooKassa;
+  // 3) переводить заказ в PAYED только по данным, полученным от YooKassa, а не из тела запроса.
   async updateStatus(dto: PaymentStatusDto){
     if (dto.event === 'payment.waiting_for_capture') {
-      const payment = await yooKassa.capturePayment(dto.object.id) 
-    
+      const payment = await yooKassa.capturePayment(dto.object.id)
+
       return payment
     }
 
     if (dto.event === 'payment.succeeded') {
-      const orderId = Number(dto.object.description.split('#')[1])
+      const orderId = Number(dto.object.metadata?.orderId)
+
+      if (!orderId) return true
 
       await this.prisma.order.update({
         where: {
