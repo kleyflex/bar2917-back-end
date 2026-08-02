@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from '@nestjs/common';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { CategoryDto } from './category.dto';
 import { CategoryService } from './category.service';
@@ -22,7 +22,6 @@ export class CategoryController {
     return this.categoryService.byId(+id);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Auth('admin')
   @Put(':id')

@@ -78,7 +78,7 @@ export class LocationService {
     });
 
     if (!location) {
-      throw new NotFoundException(`Location with address ${address} not found`);
+      throw new NotFoundException('Локация с таким адресом не найдена');
     }
 
     return location;

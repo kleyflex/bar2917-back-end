@@ -1,19 +1,25 @@
-import { EnumOrderStatus } from "@prisma/client";
 import { Type } from "class-transformer";
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from "class-validator";
+
+export class OrderItemDto {
+    @IsInt()
+    @Min(1)
+    quantity: number
+
+    @IsNumber()
+    productId: number
+}
 
 export class OrderDto {
-    @IsOptional()
-    @IsEnum(EnumOrderStatus)
-    status: EnumOrderStatus
-
-
     @IsString()
     address: string
 
     @IsOptional()
     @IsString()
     commentary: string
+
+    @IsNumber()
+    locationId: number
 
     @IsArray()
     @ValidateNested({each: true})
@@ -25,15 +31,4 @@ export class OrderDto {
 
     @IsString()
     deliveryTime: string
-}
-
-export class OrderItemDto {
-    @IsNumber()
-    quantity: number
-
-    @IsNumber()
-    price: number
-
-    @IsNumber()
-    productId: number
 }

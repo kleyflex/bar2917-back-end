@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { Auth } from 'src/auth/decorators/auth.decorator';
+import { CreateProductDto } from './dto/create-product.dto';
 import { GetAllProductDto } from './dto/get-all.product.dto';
 import { ProductDto } from './dto/product.dto';
 import { ProductService } from './product.service';
@@ -8,7 +9,6 @@ import { ProductService } from './product.service';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  @UsePipes(new ValidationPipe())
   @Get()
   async getAll(@Query() queryDto: GetAllProductDto) {
     return this.productService.getAll(queryDto)
@@ -34,15 +34,13 @@ export class ProductController {
     return this.productService.byId(+id);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Auth('admin')
   @Post()
-  async createProduct(@Body() productDto: ProductDto){
-    return this.productService.create(productDto.categoryId)
+  async createProduct(@Body() dto: CreateProductDto){
+    return this.productService.create(dto)
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Put(':id')
   @Auth('admin')

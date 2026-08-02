@@ -1,5 +1,8 @@
+import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 import { PrismaService } from './prisma.service';
 
 async function bootstrap() {
@@ -8,15 +11,20 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
   await prismaService.enableShutdownHooks(app);
 
-  const allowedOrigins = (process.env.APP_URL ?? 'http://localhost:3000')
+  const configService = app.get(ConfigService);
+
+  const allowedOrigins = configService
+    .get<string>('APP_URL')
     .split(',')
     .map(origin => origin.trim());
 
   app.setGlobalPrefix('api')
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }))
+  app.useGlobalFilters(new PrismaExceptionFilter())
   app.enableCors({
     origin: allowedOrigins,
     credentials: true
   })
-  await app.listen(4200);
+  await app.listen(configService.get<number>('PORT'));
 }
 bootstrap();

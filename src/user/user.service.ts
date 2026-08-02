@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { hash } from 'argon2';
 import { PrismaService } from 'src/prisma.service';
@@ -20,7 +20,7 @@ export class UserService {
     })
 
     if(!user){
-        throw new Error('User not found');
+        throw new NotFoundException('Пользователь не найден');
     }
 
     return user
@@ -32,7 +32,7 @@ export class UserService {
     });
 
     if (isSameUser && id !== isSameUser.id)
-      throw new BadRequestException('Email already in use');
+      throw new BadRequestException('Эта почта уже используется');
 
     if (dto.phone) {
       const samePhone = await this.prisma.user.findFirst({
@@ -54,7 +54,9 @@ export class UserService {
         name: dto.name,
         phone: dto.phone,
         password: dto.password ? await hash(dto.password) : user.password
-      }
+      },
+      // Не возвращаем хеш пароля в ответе
+      select: returnUserObject
     });
   }
 

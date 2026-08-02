@@ -1,6 +1,5 @@
-import { Body, Controller, Get, HttpCode, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { CurrentLocation } from 'src/auth/decorators/location.decorator';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
 import { OrderDto } from './order.dto';
 import { OrderService } from './order.service';
@@ -25,22 +24,20 @@ export class OrderController {
 
   @Get('by-location')
   @Auth('admin')
-  getByLocationId(@CurrentLocation('id') locationId: number) {
-    return this.orderService.getByLocationId(locationId)
+  getByLocationId(@Query('locationId') locationId: string) {
+    return this.orderService.getByLocationId(+locationId)
   }
 
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Post()
   @UseGuards(OrdersEnabledGuard)
   @Auth()
-  placeOrder(@Body() dto: OrderDto, @CurrentUser('id') userId: number, @CurrentLocation('id') locationId: number) {
-    return this.orderService.placeOrder(dto, userId, locationId)
+  placeOrder(@Body() dto: OrderDto, @CurrentUser('id') userId: number) {
+    return this.orderService.placeOrder(dto, userId)
   }
 
   // Webhook YooKassa. Пока доставка выключена — закрыт флагом ORDERS_ENABLED (503).
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Post('status')
   @UseGuards(OrdersEnabledGuard)

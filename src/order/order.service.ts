@@ -1,19 +1,27 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EnumOrderStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma.service';
+import { ProductService } from 'src/product/product.service';
 import { productReturnObject } from 'src/product/return-product.object';
 import * as YooKassa from 'yookassa';
 import { OrderDto } from './order.dto';
 import { PaymentStatusDto } from './payment-status.dto';
 
-const yooKassa = new YooKassa({
-  shopId: process.env['SHOP_ID'],
-  secretKey: process.env['PAYMENT_TOKEN']
-})
-
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  private readonly yooKassa: any;
+
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService,
+    private productService: ProductService
+  ) {
+    this.yooKassa = new YooKassa({
+      shopId: this.configService.get('SHOP_ID'),
+      secretKey: this.configService.get('PAYMENT_TOKEN')
+    });
+  }
 
   async getAllOrders() {
     return this.prisma.order.findMany({
@@ -55,34 +63,42 @@ export class OrderService {
   async getByLocationId(locationId: number) {
     return this.prisma.order.findMany({
       where: {
-        locationId  
+        locationId
       },
       orderBy: {
         createdAt: 'desc'
       },
       include: {
-        items: {  
+        items: {
           include: {
             product: {
               select: productReturnObject
             }
           }
         }
-      } 
+      }
     })
   }
-  
 
-  async placeOrder(dto: OrderDto, userId: number, locationId: number) {
-    const deliveryPrice = 100;
 
-    const total = dto.items.reduce((acc, item) => {
+  async placeOrder(dto: OrderDto, userId: number) {
+    // Цены берутся из БД по локации — клиентским ценам не доверяем
+    const items = await Promise.all(
+      dto.items.map(async item => ({
+        quantity: item.quantity,
+        productId: item.productId,
+        price: await this.productService.getProductPrice(item.productId, dto.locationId)
+      }))
+    );
+
+    const deliveryPrice = this.configService.get<number>('DELIVERY_PRICE');
+
+    const total = items.reduce((acc, item) => {
       return acc + item.price * item.quantity;
     }, 0) + deliveryPrice;
 
     const order = await this.prisma.order.create({
       data: {
-        status: dto.status,
         address: dto.address,
         commentary: dto.commentary,
         deliveryDate: dto.deliveryDate,
@@ -90,11 +106,11 @@ export class OrderService {
         total,
         location: {
           connect: {
-            id: locationId
+            id: dto.locationId
           }
         },
         items: {
-          create: dto.items
+          create: items
         },
         user: {
           connect: {
@@ -104,7 +120,7 @@ export class OrderService {
       }
     })
 
-    const payment = await yooKassa.createPayment({
+    const payment = await this.yooKassa.createPayment({
       amount: {
         value: total.toFixed(2),
         currency: 'RUB'
@@ -114,7 +130,7 @@ export class OrderService {
       },
       confirmation: {
         type:'redirect',
-        return_url: 'http://31.128.41.46:3000/thanks'
+        return_url: this.configService.get('RETURN_URL')
       },
       description: `Заказ #${order.id}`,
       metadata: {
@@ -132,7 +148,7 @@ export class OrderService {
   // 3) переводить заказ в PAYED только по данным, полученным от YooKassa, а не из тела запроса.
   async updateStatus(dto: PaymentStatusDto){
     if (dto.event === 'payment.waiting_for_capture') {
-      const payment = await yooKassa.capturePayment(dto.object.id)
+      const payment = await this.yooKassa.capturePayment(dto.object.id)
 
       return payment
     }

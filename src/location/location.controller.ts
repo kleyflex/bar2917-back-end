@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { LocationDto } from './dto/location.dto';
 import { LocationService } from './location.service';
@@ -22,7 +22,6 @@ export class LocationController {
     return this.locationService.getById(+id);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Auth('admin')
   @Post()
@@ -30,7 +29,6 @@ export class LocationController {
     return this.locationService.createLocation(locationDto);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Auth('admin')
   @Put(':id')

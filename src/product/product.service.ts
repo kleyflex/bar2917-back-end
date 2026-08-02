@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
 import { PrismaService } from 'src/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
 import { EnumProductSort, GetAllProductDto } from './dto/get-all.product.dto';
 import { ProductDto } from './dto/product.dto';
 import { productReturnObject, productReturnObjectFullest } from './return-product.object';
@@ -10,11 +11,10 @@ import { productReturnObject, productReturnObjectFullest } from './return-produc
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  
-  async getAll(dto: GetAllProductDto) {
-    const {sort, searchTerm, locationId} = dto;
 
-    // Проверяем существование локации
+  async getAll(dto: GetAllProductDto) {
+    const { sort, searchTerm, locationId, page, perPage } = dto;
+
     const location = await this.prisma.location.findUnique({
       where: { id: locationId }
     });
@@ -23,69 +23,62 @@ export class ProductService {
       throw new NotFoundException('Локация не найдена');
     }
 
-    // Формируем условия фильтрации
     const where: Prisma.ProductWhereInput = {
       locations: {
         some: {
-          locationId: locationId // Только товары, доступные в этой локации
+          locationId // Только товары, доступные в этой локации
         }
-      }
+      },
+      ...(searchTerm ? {
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { description: { contains: searchTerm, mode: 'insensitive' } }
+        ]
+      } : {})
     };
 
-    const prismaSearchTermFilter:Prisma.ProductWhereInput = searchTerm ? {
-      OR: [
-        {name: {
-          contains: searchTerm,
-          mode: 'insensitive'
-        }},
-        {description: {
-          contains: searchTerm,
-          mode: 'insensitive'
-        }}
-      ]
-    } : {}
-
     const products = await this.prisma.product.findMany({
-      where: {
-        ...where,
-        ...prismaSearchTermFilter
-      },
-      include: {
+      where,
+      select: {
+        ...productReturnObject,
         locations: {
-          where: {
-            locationId: locationId
-          },
+          where: { locationId },
           select: {
-            price: true
+            price: true,
+            isAvailable: true,
+            location: {
+              select: {
+                id: true,
+                name: true,
+                address: true
+              }
+            }
           }
         }
       }
     });
 
-    // Сортируем продукты по цене в памяти
+    // Сортировка в памяти — приемлемо при текущем объёме каталога (~110 товаров);
+    // при заметном росте перенести сортировку по цене в SQL
     if (sort === EnumProductSort.LOW_PRICE) {
-      products.sort((a, b) => {
-        const priceA = a.locations[0]?.price || 0;
-        const priceB = b.locations[0]?.price || 0;
-        return priceA - priceB;
-      });
+      products.sort((a, b) => (a.locations[0]?.price || 0) - (b.locations[0]?.price || 0));
     } else if (sort === EnumProductSort.HIGH_PRICE) {
-      products.sort((a, b) => {
-        const priceA = a.locations[0]?.price || 0;
-        const priceB = b.locations[0]?.price || 0;
-        return priceB - priceA;
-      });
+      products.sort((a, b) => (b.locations[0]?.price || 0) - (a.locations[0]?.price || 0));
     } else if (sort === EnumProductSort.NEWEST) {
       products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     } else {
       products.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
     }
 
+    // Пагинация после сортировки; length — всегда полное число товаров под фильтром
+    const length = products.length;
+    const pagedProducts = perPage
+      ? products.slice(((page ?? 1) - 1) * perPage, (page ?? 1) * perPage)
+      : products;
+
     return {
-      products,
-      length: await this.prisma.product.count({
-        where: prismaSearchTermFilter
-      })
+      products: pagedProducts,
+      length
     }
   }
 
@@ -98,7 +91,7 @@ export class ProductService {
     })
 
     if(!product){
-        throw new NotFoundException('Product not found');
+        throw new NotFoundException('Товар не найден');
     }
 
     return product
@@ -113,7 +106,7 @@ export class ProductService {
     })
 
     if(!product){
-        throw new NotFoundException('Product not found by slug');
+        throw new NotFoundException('Товар не найден');
     }
 
     return product
@@ -130,7 +123,7 @@ export class ProductService {
     })
 
     if(!products){
-      throw new NotFoundException('Products not found');
+      throw new NotFoundException('Товары не найдены');
   }
 
   return products
@@ -138,10 +131,6 @@ export class ProductService {
 
   async getSimilar(id: number) {
     const currentProduct = await this.byId(id)
-
-    if(!currentProduct){
-      throw new NotFoundException('Product not found');
-    }
 
     const products = await this.prisma.product.findMany({
       where: {
@@ -160,32 +149,32 @@ export class ProductService {
 
     return products
   }
-  
-  async create(categoryId: number) {
-    // Проверяем существование категории
+
+  async create(dto: CreateProductDto) {
     const category = await this.prisma.category.findUnique({
-      where: { id: categoryId }
-    });
-    
-    if (!category) {
-      throw new NotFoundException('Не найдена категория при попытке создать продукт');
-    }
-    
-    const product = await this.prisma.product.create({
-      data: {
-        name: '',
-        slug: '',
-        description: '',
-        image: '',
-        weight: 0
-      }
+      where: { id: dto.categoryId }
     });
 
-    return product.id;
+    if (!category) {
+      throw new NotFoundException('Категория не найдена');
+    }
+
+    return this.prisma.product.create({
+      data: {
+        name: dto.name,
+        slug: slugify(dto.name).toLowerCase(),
+        description: dto.description ?? '',
+        image: dto.image ?? '',
+        weight: dto.weight ?? 0,
+        category: {
+          connect: { id: dto.categoryId }
+        }
+      }
+    });
   }
 
   async update(id: number, dto: ProductDto) {
-    const { name, image, description, categoryId, items } = dto;
+    const { name, image, description, categoryId, items, weight, isActive } = dto;
 
     return this.prisma.product.update({
       where: { id },
@@ -193,6 +182,8 @@ export class ProductService {
         description,
         image,
         name,
+        weight,
+        isActive,
         slug: slugify(name).toLowerCase(),
         category: {
           connect: {
@@ -200,9 +191,19 @@ export class ProductService {
           }
         },
         locations: {
-          create: items.map(item => ({
-            price: item.price,
-            locationId: item.locationId
+          // upsert вместо create: повторное сохранение не падает на unique(productId, locationId)
+          upsert: items.map(item => ({
+            where: {
+              productId_locationId: {
+                productId: id,
+                locationId: item.locationId
+              }
+            },
+            update: { price: item.price },
+            create: {
+              price: item.price,
+              locationId: item.locationId
+            }
           }))
         }
       }
@@ -210,10 +211,11 @@ export class ProductService {
   }
 
   async delete(id: number) {
-  
-    return this.prisma.product.delete({
-      where: { id }
-    })
+    // Связанные цены по локациям удаляются в той же транзакции
+    return this.prisma.$transaction(async tx => {
+      await tx.productLocation.deleteMany({ where: { productId: id } });
+      return tx.product.delete({ where: { id } });
+    });
   }
 
   async getProductPrice(productId: number, locationId: number) {

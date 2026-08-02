@@ -1,29 +1,17 @@
-import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class LocationDto {
-  @IsNumber()
-  id: number;
-
   @IsString()
   address: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   name?: string;
 
   @IsString()
   phone: string;
 
-  @IsBoolean()
-  isActive: boolean;
-
-  @IsBoolean()
   @IsOptional()
+  @IsBoolean()
   isDefault?: boolean;
-
-  @IsDate()
-  createdAt: Date;
-
-  @IsDate()
-  updatedAt: Date;
 }

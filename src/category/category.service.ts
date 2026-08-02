@@ -18,7 +18,7 @@ export class CategoryService {
     })
 
     if(!category){
-        throw new NotFoundException('Category not found');
+        throw new NotFoundException('Категория не найдена');
     }
 
     return category
@@ -33,7 +33,7 @@ export class CategoryService {
     })
 
     if(!category){
-        throw new NotFoundException('Category not found by slug');
+        throw new NotFoundException('Категория не найдена');
     }
 
     return category

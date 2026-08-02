@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
@@ -9,7 +9,6 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -18,7 +17,6 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @UseGuards(ThrottlerGuard)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
@@ -27,7 +25,6 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  @UsePipes(new ValidationPipe())
   @HttpCode(200)
   @Post('login/accessToken')
   async getNewTokens(@Body() dto: RefreshTokenDto) {
