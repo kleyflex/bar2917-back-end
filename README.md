@@ -12,18 +12,18 @@ API суши-бара Bar2917. Отдаёт каталог товаров с ц�
 ## Запуск
 
 ```bash
-npm install
-cp env.example .env        # заполнить значения
-npx prisma generate
-npx prisma migrate deploy  # на пустой базе применит схему
-npm run start:dev          # дев-режим, http://localhost:4200/api
-npm run build && npm run start:prod   # прод
+yarn install
+cp env.example .env         # заполнить значения
+yarn prisma generate
+yarn prisma migrate deploy  # на пустой базе применит схему
+yarn start:dev              # дев-режим, http://localhost:4200/api
+yarn build && yarn start:prod   # прод
 ```
 
 На существующей базе, созданной раньше через `db push`, миграции нужно один раз пометить применёнными (таблицы уже есть):
 
 ```bash
-npx prisma migrate resolve --applied 0_init
+yarn prisma migrate resolve --applied 0_init
 ```
 
 ## Переменные окружения
