@@ -25,6 +25,10 @@ async function bootstrap() {
     origin: allowedOrigins,
     credentials: true
   })
-  await app.listen(configService.get<number>('PORT') ?? 4200);
+  // По умолчанию слушаем только localhost: снаружи API доступен лишь через nginx
+  await app.listen(
+    configService.get<number>('PORT') ?? 4200,
+    configService.get<string>('HOST') ?? '127.0.0.1'
+  );
 }
 bootstrap();

@@ -4,6 +4,7 @@ export const envValidationSchema = Joi.object({
   DATABASE_URL: Joi.string().required(),
   JWT_SECRET: Joi.string().required(),
   PORT: Joi.number().default(4200),
+  HOST: Joi.string().default('127.0.0.1'),
   APP_URL: Joi.string().default('http://localhost:3000'),
   ORDERS_ENABLED: Joi.string().valid('true', 'false').default('false'),
   DELIVERY_PRICE: Joi.number().default(100),
